@@ -48,18 +48,28 @@ class RentService(APIView):
 
     @csrf_exempt
     def post(request):
-        print(request)
-        objrent = Rent.objects.latest('rentid')
+
+        if(Rent.objects.count()>0):
+            objrent = Rent.objects.latest('rentid')
+            objrent = objrent.rentid
+        else:
+            objrent = 0
+
         data = JSONParser().parse(request)
-        print(data)
         userregister = User.objects.get(userid = data['userid'])
-        newrent = Rent(rentid=(objrent.rentid +1),user = userregister,renteddate = datetime.now(),totalamount = data['totalamount'],haspenalty=False,inprocess=True)
+        
+        newrent = Rent(rentid=(objrent+1),user = userregister,renteddate = datetime.now(),totalamount = data['totalamount'],haspenalty=False,inprocess=True)
         newrent.save()
 
         for movieidtemp in data['movieids']:
-            objrentmovies = RentMovies.objects.latest('rentmoviesid')
+            if(RentMovies.objects.count()>0):
+                objrentmovies = RentMovies.objects.latest('rentmoviesid')
+                objrentmovies = objrentmovies.rentmoviesid 
+            else:
+                objrentmovies = 0
+
             movietemp = Movie.objects.get(movieid = movieidtemp)
-            newrentmovie = RentMovies(rentmoviesid = (objrentmovies.rentmoviesid + 1),rent = newrent, movie = movietemp)
+            newrentmovie = RentMovies(rentmoviesid = (objrentmovies + 1),rent = newrent, movie = movietemp)
             newrentmovie.save()
 
         return HttpResponse(JSONRenderer().render({'rentid':(newrent.rentid)}), content_type="application/json")
@@ -67,7 +77,6 @@ class RentService(APIView):
     @csrf_exempt
 
     def put(request):
-        print(request)
         data = JSONParser().parse(request)
         renttemp = Rent.objects.get(rentid=data['rentid'])
         renttemp.delivereddate = datetime.now()
